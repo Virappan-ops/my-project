@@ -1,0 +1,19 @@
+form{
+    background-color: #a3d6f8;
+    width: 300px;
+    height:320px;
+    border: ridge 30px #0077ff;
+    border-radius: 10px;
+    padding: 30px;
+    margin: 100px ;
+    display: flex;
+    flex-direction: column;
+}
+body{
+    background-color: #45a3f6;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    align-content: center;
+}
