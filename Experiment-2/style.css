@@ -19,10 +19,11 @@
 
 .deposit{
     background-color: #1bf24a;
-
+    color: #fff;
 }
 .withdraw{
     background-color: #f21b1b;
+    color: #fff;
 }
 body{
     display : flex;
