@@ -1,10 +1,10 @@
 form{
     background-color: #a3d6f8;
-    width: 300px;
-    height:320px;
+    width: 150px;
+    height:150px;
     border: ridge 30px #0077ff;
     border-radius: 10px;
-    padding: 30px;
+    padding: 5px;
     margin: 100px ;
     display: flex;
     flex-direction: column;

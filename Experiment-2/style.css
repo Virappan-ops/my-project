@@ -1,0 +1,32 @@
+.outer-container {
+    background-color: #e7e5e5;
+    align-content: center;
+    justify-content: center;
+    border: solid 1px #000000;
+    display: flex;
+    width: 200px;
+    height: 150px;
+    padding: 15px;
+}
+.inner-container {
+    background-color: #ffffff;
+    width: 170px;
+    height: 120px;
+    border-radius: 10px;
+    align-items: center;
+    margin: 15px;
+}
+
+.deposit{
+    background-color: #1bf24a;
+
+}
+.withdraw{
+    background-color: #f21b1b;
+}
+body{
+    display : flex;
+    align-items : center;
+    justify-content : center;
+    height : 100vh;
+}
