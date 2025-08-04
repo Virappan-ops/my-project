@@ -1,0 +1,5 @@
+Learning Outcomes:
+I learned how to use Flexbox to center content both vertically and horizontally on the screen.
+I understood how CSS styling like padding, shadows, and border-radius can improve UI design.
+I practiced creating a clean and structured HTML layout for better readability and future updates.
+I also learned how to give a professional look to a simple project using only basic frontend tools (HTML & CSS).
