@@ -1,33 +1,56 @@
-.outer-container {
-    background-color: #e7e5e5;
-    align-content: center;
-    justify-content: center;
-    border: solid 1px #000000;
+body {
     display: flex;
-    width: 200px;
-    height: 150px;
-    padding: 15px;
-}
-.inner-container {
-    background-color: #ffffff;
-    width: 170px;
-    height: 120px;
-    border-radius: 10px;
     align-items: center;
-    margin: 15px;
+    justify-content: center;
+    height: 100vh;
+    background-color: #ffffff;
+    margin: 0;
+    font-family: Arial, sans-serif;
 }
 
-.deposit{
-    background-color: #1bf24a;
-    color: #fff;
+.outer-container {
+    background-color: #f1f1f1;
+    border: 2px solid #000000;
+    padding: 40px; 
 }
-.withdraw{
-    background-color: #f21b1b;
-    color: #fff;
+
+.inner-container {
+    background-color: #ffffff;
+    width: 320px;
+    padding: 30px 40px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    text-align: center;
 }
-body{
-    display : flex;
-    align-items : center;
-    justify-content : center;
-    height : 100vh;
+
+h2 {
+    font-size: 2em;
+    margin: 8px 0 24px 0;
+    color: #28a745;
+    font-weight: 400;
+}
+
+.buttons {
+   
+    display: flex;
+    flex-direction: column;
+    gap: 12px; 
+}
+
+button {
+    border: none;
+    padding: 15px;
+    border-radius: 8px;
+    color: white;
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.deposit {
+    background-color: #28a745; 
+}
+
+.withdraw {
+    background-color: #dc3545;
 }
