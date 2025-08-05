@@ -1,0 +1,26 @@
+body{
+    display: grid;
+    grid-template-columns: 400px auto;
+    grid-template-rows: 100px auto 50px;
+    height: 100vh;
+    border: 3.5px solid #000000;
+}
+header{
+    background-color: #4CAF50;
+    grid-column: 1 /span 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+}
+nav{
+    background-color: #efefef;
+}
+main{
+    background-color: #ffffff;
+}
+footer{
+    background-color: #4CAF50;
+    grid-column: 1 /span 2;
+}
+
