@@ -68,5 +68,5 @@ PROJECT: Admin Dashboard with CSS Grid Layout & Theme Switching
   b) Flexbox Alignment
   c) Custom CSS Variables
   d) Theme Toggling with Pure CSS
-  e) Semantic HTML Structure
+  e) Semantic HTML Structure.
        
