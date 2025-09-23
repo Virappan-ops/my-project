@@ -1,22 +1,11 @@
-// =======================================================
-// CLI Employee Management System
-// =======================================================
-
-// Step 2: Setup readline
 const readline = require('readline');
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-// Step 3: Data Store
 let employees = [];
 
-// Step 4: Core Functions
-
-/**
- * Adds a new employee to the list.
- */
 function addEmployee() {
   rl.question('Enter employee name: ', (name) => {
     rl.question('Enter employee ID: ', (id) => {
@@ -32,9 +21,6 @@ function addEmployee() {
   });
 }
 
-/**
- * Lists all employees in the console.
- */
 function listEmployees() {
   if (employees.length === 0) {
     console.log('\nNo employees found.');
@@ -45,12 +31,9 @@ function listEmployees() {
     });
     console.log('---------------------');
   }
-  displayMenu(); // Show the menu again
+  displayMenu(); 
 }
 
-/**
- * Removes an employee by their ID.
- */
 function removeEmployee() {
   rl.question('Enter employee ID to remove: ', (idToRemove) => {
     const index = employees.findIndex(employee => employee.id === idToRemove);
@@ -61,23 +44,15 @@ function removeEmployee() {
     } else {
       console.log('\nEmployee with that ID not found.');
     }
-    displayMenu(); // Show the menu again
+    displayMenu();
   });
 }
 
-/**
- * Exits the application.
- */
 function exitApp() {
   console.log('\nExiting the application. Goodbye!');
   rl.close();
 }
 
-
-// Step 5: The Main Menu
-/**
- * Displays the main menu and handles user input.
- */
 function displayMenu() {
   console.log('\n===== Employee Management System =====');
   console.log('1. Add Employee');
@@ -101,7 +76,7 @@ function displayMenu() {
         break;
       default:
         console.log('\nInvalid choice. Please enter a number from 1 to 4.');
-        displayMenu(); // Show menu again for invalid choices
+        displayMenu();
         break;
     }
   });
