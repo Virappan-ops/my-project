@@ -1,0 +1,129 @@
+PROJECT: E-commerce Catalog with Nested Document Structure
+
+1) Technologies Used:
+    a) Node.js & Express.js: As the runtime environment and framework for building the REST API server.
+    b) MongoDB: As the NoSQL database to store product data in a flexible, document-oriented structure.
+    c) Mongoose: As the Object Data Modeling (ODM) library to define schemas and interact with the MongoDB database.
+    d) JavaScript (ES6+): For the application's logic, control flow, and asynchronous operations (async/await).  
+
+
+2) Project Overview:
+    a) This project is a REST API for managing an e-commerce product catalog, built with Node.js, Express, and MongoDB. 
+    b) It demonstrates how to design and implement a flexible data model using nested documents to handle complex, real-world relationships—specifically, a product having multiple variants (e.g., different colors, sizes). 
+    c) The primary goal is to practice modern backend development, REST API principles, and advanced MongoDB schema design using Mongoose.
+
+
+3) Project File Structure: The project follows a standard MVC (Model-View-Controller) pattern to keep the code organized, scalable, and easy to maintain.
+
+        Experiment-15/
+        ├── controllers/
+        │   └── productController.js    # Contains all the business logic
+        ├── models/
+        │   └── Product.js              # Defines the database schema
+        ├── routes/
+        │   └── products.js             # Defines the API endpoints (URLs)
+        ├── package.json
+        └── server.js                   # The main server entry point
+
+
+4) Structure: 
+    Application Loop & In-Memory Data:
+     The application's data is managed in a MongoDB collection. The Mongoose schema defines the structure, and the controller functions handle all interactions with the database.
+
+     SNIPPETS:
+
+    i) Mongoose Schema with Nested Documents (Product.js):
+     Instead of a separate table, product variants are stored as a nested array of documents directly within each product. This is the core concept of the project.
+      
+      SNIPPET (models/Product.js):
+          // Schema for the nested variant documents
+          const VariantSchema = new mongoose.Schema({
+          color: { type: String, required: true },
+          size: { type: String, required: true },
+          stock: { type: Number, required: true, min: 0 }
+        });
+
+        // Main product schema that embeds the variants array
+        const ProductSchema = new mongoose.Schema({
+          name: { type: String, required: true },
+          price: { type: Number, required: true },
+          category: { type: String, required: true },
+          variants: [VariantSchema] // Here we embed the schema
+        });
+
+          module.exports = mongoose.model('Product', ProductSchema);
+
+
+   ii) API Routes & Controllers (routes/ & controllers/):
+     The routes/products.js file defines all the available API endpoints and maps each one to a specific controller function. The controller functions in productController.js contain the actual logic to process requests. 
+      
+      SNIPPET (routes/products.js):   
+        const express = require('express');
+        const router = express.Router();
+        const productController = require('../controllers/productController');
+
+        // GET /products -> To retrieve all products
+        router.get('/', productController.getAllProducts);
+
+        // POST /products/add -> To insert a new product
+        router.post('/add', productController.addProduct);
+
+        // ... other routes
+
+
+   iii) Add Product Function (addProduct): 
+     This controller function handles POST requests. It reads the product data from the request body (req.body), creates a new Mongoose model instance, and saves it to the database.            function addEmployee() {
+             
+      SNIPPET (controllers/productController.js):
+        const addProduct = async (req, res) => {
+          try {
+            const product = new Product({
+              name: req.body.name,
+              price: req.body.price,
+              category: req.body.category,
+              variants: req.body.variants
+            });
+            const newProduct = await product.save();
+            res.status(201).json(newProduct);
+          } catch (err) {
+            res.status(400).json({ message: err.message });
+          }
+        };
+
+
+    iv) Querying Nested Documents (getProductsByColor):
+     This function demonstrates a powerful MongoDB feature. It finds products based on a property inside the nested variants array. It also uses projection ($elemMatch) to return only the specific variant that matches the query.
+            
+      SNIPPET (controllers/productController.js):      
+        const getProductsByColor = async (req, res) => {
+          try {
+            const requestedColor = req.params.color;
+            const products = await Product.find(
+              { 'variants.color': requestedColor }, // Query on the nested field
+              {
+                name: 1, price: 1, category: 1,
+                // Return only the first matching variant from the array
+                variants: { $elemMatch: { color: requestedColor } }
+              }
+            );
+            res.json(products);
+          } catch (err) {
+            // ... error handling
+          }
+        };
+
+
+5) Learning Outcomes:
+    a) Mastered the design and implementation of a REST API using Node.js and Express.
+    b) Gained practical experience with MongoDB and Mongoose for database operations.
+    c) Understood how to model one-to-many relationships using nested documents.
+    d) Implemented advanced MongoDB queries to filter and project data from nested arrays.
+    e) Learned to structure a backend application using the MVC (Model-View-Controller) pattern.
+
+6) Key Concepts:
+    a) REST API Development
+    b) MongoDB & NoSQL Databases
+    c) Mongoose ODM & Schema Design
+    d) Nested Documents Data Modeling
+    e) Asynchronous JavaScript (async/await)
+    f) MVC Architecture
