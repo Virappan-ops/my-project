@@ -1,0 +1,133 @@
+PROJECT: Middleware Implementation for Logging and Bearer Token Authentication
+
+1) Technologies Used:
+    a) Node.js & Express.js: Used to build the backend server and handle HTTP requests efficiently through middleware functions.
+    b) JavaScript (ES6+): For implementing middleware logic, route handling, and asynchronous control flow.  
+    c) Postman / curl: To test API endpoints for both public and protected routes.
+
+2) Project Overview:
+    a) This project demonstrates how middleware works in an Express.js server by implementing two core middlewares — one for logging HTTP requests and another for Bearer token authentication. 
+    b) The first middleware globally logs each request with its HTTP method, URL, and timestamp, helping developers monitor all incoming requests.
+    c) The second middleware ensures route protection by verifying a Bearer token (mysecrettoken) in the request’s Authorization header. Only clients providing the correct token can access protected resources.
+    d) The project also includes sample routes — one public route accessible without authentication and another protected route that requires valid authorization.
+
+
+3) Project File Structure: 
+
+      Experiment-6.1/
+      │
+      ├── node_modules/
+      │
+      ├── Screenshots/                     # Stores Postman test proofs
+      │
+      ├── package.json                     # Project dependencies and metadata
+      ├── package-lock.json                # Auto-generated dependency lock file
+      └── server.js                        # Main Express server with middleware and routes
+
+
+4) Structure: 
+    Application Loop & In-Memory Data:
+      The application uses Express middleware chaining to process requests in a step-by-step manner before sending a response.
+        It includes:
+          a) Global logging middleware → applied using app.use().
+          b) Custom authentication middleware → applied to specific routes.
+          c) Public & protected endpoints → to test middleware flow.    
+     
+     SNIPPETS:
+
+    i) Logging Middleware:
+     This middleware logs all requests coming to the server with date, method, and URL — useful for debugging and monitoring.
+      
+      SNIPPET (server.js):
+          app.use((req, res, next) => {
+           console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+           next();
+          });
+
+
+   ii) Bearer Token Authentication Middleware:
+     Validates the Authorization header for a Bearer token and blocks unauthorized access.
+      
+      SNIPPET (server.js):   
+        function authMiddleware(req, res, next) {
+          const authHeader = req.headers['authorization'];
+
+          if (!authHeader) {
+            return res.status(401).json({ message: 'No Authorization header found' });
+          }
+
+          const token = authHeader.split(' ')[1]; // Extracts token after "Bearer "
+          if (token === 'mysecrettoken') {
+            next();
+          } else {
+            res.status(403).json({ message: 'Forbidden: Invalid token' });
+          }
+        }
+
+
+   iii) Public and Protected Routes: 
+     A public route that anyone can access, and a protected route that requires a valid token.
+             
+      SNIPPET (server.js):
+        // Public route
+        app.get('/', (req, res) => {
+          res.send('Welcome to the public route!');
+        });
+
+        // Protected route
+        app.get('/protected', authMiddleware, (req, res) => {
+          res.send('Access granted! This is a protected route.');
+        });
+
+
+    iv) Admin Router with Middleware:
+     Demonstrates how middleware can also be applied to sub-routes using express.Router().
+            
+      SNIPPET (server.js):      
+        const router = express.Router();
+
+        router.use((req, res, next) => {
+          console.log('Admin router middleware executed');
+          next();
+        });
+
+        router.get('/dashboard', (req, res) => {
+          res.send('Admin dashboard');
+        });
+
+        app.use('/admin', authMiddleware, router);
+
+
+
+5) Learning Outcomes:
+    a) Understood how Express middleware functions process requests sequentially using next().
+    b) Learned how to protect routes using Bearer token authentication.
+    c) Practiced applying global and route-level middleware for modular backend design.
+    d) Gained experience in testing APIs using Postman with and without authentication headers.
+    e) Observed how logging middleware helps in request tracing and debugging.
+
+6) Key Concepts:
+    a) Express.js Middleware Flow
+    b) Request Logging
+    c) Bearer Token Authentication
+    d) Route Protection & Access Control
+    e) Express Router and Subroutes
+    f) HTTP Methods and Headers
+    g) JSON-based REST API Design
+
+
+7) Sample API Test (Postman)
+    Public Route Test:
+       → GET http://localhost:3000/ → ✅ Response: Welcome to the public route!
+
+    Protected Route Test (without token):
+       → GET http://localhost:3000/protected → ❌ Response: 403 Forbidden
+
+    Protected Route Test (with token):
+       → Add Header: Authorization: Bearer mysecrettoken
+       → Response: Access granted! This is a protected route.
+
+
+8) Conclusion
+  a) This experiment provides a clear understanding of how Express.js middleware enhances application security and maintainability.
+  b) Through the use of logging and authentication, we explored two essential backend techniques that form the backbone of modern API development.

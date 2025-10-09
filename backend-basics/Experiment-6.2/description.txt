@@ -1,0 +1,156 @@
+PROJECT: Middleware Implementation for Logging and Bearer Token Authentication
+
+1) Technologies Used:
+    a) Node.js & Express.js: Used for building the RESTful backend server to handle HTTP requests and define API endpoints.
+    b) MongoDB: Serves as the NoSQL database for storing user accounts, balances, and transactions.
+    c) Mongoose: Used as the ODM (Object Data Modeling) library to interact with MongoDB through defined schemas.
+    d) bcryptjs: For securely hashing and verifying user passwords before saving them to the database.
+    e) jsonwebtoken (JWT): For generating and verifying tokens that authenticate users securely.
+    f) dotenv: To manage environment variables like MONGO_URI and JWT_SECRET safely through a .env file.
+    g) JavaScript (ES6+): Used for asynchronous programming (async/await), server logic, and middleware structure.
+
+
+2) Project Overview:
+    a) This project implements a secure banking API that demonstrates authentication and authorization using JWT (JSON Web Tokens) in an Express.js server.
+    b) It allows users to log in, deposit, withdraw, check balance, and transfer funds securely — all protected by an authentication middleware.
+    c) The project emphasizes secure password hashing, token-based session management, and role-based request validation.
+    d) The API demonstrates how middleware functions can ensure only authorized users access sensitive routes.
+
+
+3) Project File Structure: 
+
+      Experiment-6.2/
+      │
+      ├── models/
+      │   └── User.js                # Mongoose schema for user details (username, password, balance)
+      │
+      ├── .env                       # Environment variables (MONGO_URI, JWT_SECRET)
+      ├── package.json               # Dependencies and scripts
+      ├── package-lock.json
+      └── index.js                   # Main Express server with authentication and banking logic
+
+
+4) Structure: 
+    Application Loop & In-Memory Data:
+      The application uses middleware-based request flow for secure route handling.
+        Each incoming request goes through:
+          a) express.json() – Parses request body.
+          b) authMiddleware – Validates JWT token before accessing private routes.
+          c) Controller Logic – Executes banking operations (balance, deposit, withdraw, transfer).
+     
+     SNIPPETS:
+
+    i) Authentication Middleware:
+     This middleware extracts and verifies the JWT token from the Authorization header before allowing access to protected routes. 
+      SNIPPET (index.js):
+          const authMiddleware = (req, res, next) => {
+          const authHeader = req.headers['authorization'];
+          if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(403).json({ message: "Invalid or expired token" });
+          }
+
+          const token = authHeader.split(' ')[1];
+          try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            req.userId = decoded.userId; 
+            next();
+          } catch (error) {
+            return res.status(403).json({ message: "Invalid or expired token" });
+          }
+        };
+
+
+   ii) User Creation Route:
+     This route creates two sample users (virappan and vishav) with hashed passwords for testing the authentication flow. 
+      SNIPPET (index.js):   
+        app.post('/create-users', async (req, res) => {
+          const hashedVirappanPassword = await bcrypt.hash('password123', 10);
+          const hashedVishavPassword = await bcrypt.hash('password456', 10);
+
+          await User.deleteMany({});
+          const users = await User.create([
+            { username: 'virappan', password: hashedVirappanPassword, name: 'Virappan', balance: 1000 },
+            { username: 'vishav', password: hashedVishavPassword, name: 'Vishav', balance: 500 },
+          ]);
+          res.status(201).json({ message: 'Users created.', users });
+        });
+
+
+
+   iii) Login Route: 
+     Generates a JWT token upon successful login. The token is required for all further API actions.        
+      SNIPPET (index.js):
+        app.post('/login', async (req, res) => {
+          const { username, password } = req.body;
+          const user = await User.findOne({ username });
+
+          if (!user || !(await bcrypt.compare(password, user.password))) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+          }
+
+          const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+          res.json({ token });
+        });
+
+
+    iv) Banking Operations (Protected Routes):
+     Once authenticated, users can perform deposit, withdraw, and transfer actions using JWT-secured endpoints.       
+      SNIPPET (index.js): 
+      //CHECK BALANCE     
+        app.get('/balance', authMiddleware, async (req, res) => {
+          const user = await User.findById(req.userId);
+          res.json({ balance: user.balance });
+        });
+
+      //DEPOSIT MONEY
+        app.post('/deposit', authMiddleware, async (req, res) => {
+          const { amount } = req.body;
+          const user = await User.findByIdAndUpdate(
+            req.userId,
+            { $inc: { balance: amount } },
+            { new: true }
+          );
+          res.json({ message: `Deposited $${amount}`, newBalance: user.balance });
+        });
+
+
+5) Learning Outcomes:
+    a) Learned to implement JWT-based authentication in a Node.js REST API.
+    b) Understood middleware chaining for request validation and security.
+    c) Practiced secure password hashing and token verification.
+    d) Built routes for core banking operations with database updates.
+    e) Learned to manage environment variables using dotenv.
+    f) Understood how to protect API routes using reusable authentication middleware.
+
+6) Key Concepts:
+    a) JSON Web Token (JWT) Authentication
+    b) Middleware-Based Security
+    c) Password Hashing with bcrypt
+    d) MongoDB CRUD Operations
+    e) Environment Variables & dotenv
+    f) Express.js REST API Development
+    g) Asynchronous JavaScript (async/await)
+
+
+7) Sample API Testing (Postman)
+  Step 1: POST /create-users
+    → Creates sample users (Virappan, Vishav)
+
+  Step 2: POST /login
+    → Send { "username": "virappan", "password": "password123" }
+       Returns { token: "<JWT_TOKEN>" }
+
+  Step 3: Use token for all protected routes:
+    → Add Header → Authorization: Bearer <JWT_TOKEN>
+
+  Example Tests:
+    → GET /balance → Returns user balance.
+    → POST /deposit → Adds funds to account.
+    → POST /withdraw → Deducts funds if balance is sufficient.
+    → POST /transfer → Moves money between two accounts.
+
+
+8) Conclusion
+    a) This project provides hands-on experience in securing REST APIs using JWT tokens and Express middleware.
+    b) It combines authentication, authorization, and database interaction to build a realistic, secure backend similar to modern financial systems.
+    c) You now understand how to protect sensitive operations and implement middleware-driven security layers in Node.js applications.
