@@ -5,12 +5,12 @@ on:
     branches:
       - main
     paths:
-      - 'react-project/Experiment-7/'
+      - 'react-project/Experiment-7/**'
   pull_request:
     branches:
       - main
     paths:
-      - 'react-project/Experiment-7/'
+      - 'react-project/Experiment-7/**'
   
   workflow_dispatch: # given button to run worflow manually
 
