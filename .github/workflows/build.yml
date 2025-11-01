@@ -5,12 +5,12 @@ on:
     branches:
       - main
     paths:
-      - 'react-projects/Experiment-7/'
+      - 'react-project/Experiment-7/'
   pull_request:
     branches:
       - main
     paths:
-      - 'react-projects/Experiment-7/'
+      - 'react-project/Experiment-7/'
   
   workflow_dispatch: # given button to run worflow manually
 
@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: react-projects/Experiment-7
+        working-directory: react-project/Experiment-7
 
         
     steps:
