@@ -1,82 +1,60 @@
-# Name of your workflow, visible in the Actions tab
+# Name of your workflow
 name: React CI/CD Pipeline
 
-# --- Triggers ---
-# This workflow will run on any push to the 'main' branch
 on:
   push:
     branches: [ "main" ]
 
-# --- Permissions ---
-# Grant permissions for the workflow to write to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# --- Jobs ---
-# A workflow can have one or more jobs
-jobs:
-  # --- Build Job ---
-  # This job builds and tests the React app
-  build:
-    # Use the latest Ubuntu (Linux) virtual machine
-    runs-on: ubuntu-latest
+# NEW: Set a default working directory for all jobs
+defaults:
+  run:
+    working-directory: ./docker-project/experiment-9.2
 
+jobs:
+  build:
+    runs-on: ubuntu-latest
     steps:
-      # 1. Get the code from your repository
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Set up a specific version of Node.js
       - name: Set up Node.js v18
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          # Use npm cache for faster installs
           cache: 'npm'
+          # NEW: Specify package.json location for caching
+          cache-dependency-path: docker-project/experiment-9.2/package-lock.json
 
-      # 3. Install project dependencies
       - name: Install dependencies
         run: npm install
 
-      # 4. Run the tests
       - name: Run tests
         run: npm test
 
-      # 5. Build the production app
-      # PUBLIC_URL=./ is needed for GitHub Pages deployment
       - name: Build the app
         run: PUBLIC_URL=./ npm run build
 
-      # 6. Upload the 'build' folder as an artifact
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          # The name of the artifact
           name: github-pages-artifact
-          # The path to the folder to upload
-          path: ./build
+          # NEW: Path must be relative to the workspace root
+          path: ./docker-project/experiment-9.2/build
 
-  # --- Deploy Job ---
-  # This job deploys the app to GitHub Pages
   deploy:
-    # This job 'needs' the 'build' job to finish successfully first
     needs: build
-    
-    # Grant permissions for deployment
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }} # This will output the live URL
-    
-    # Use the latest Ubuntu (Linux) virtual machine
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-
     steps:
-      # 1. Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
         with:
-          # Use the artifact we saved from the 'build' job
           artifact_name: github-pages-artifact
