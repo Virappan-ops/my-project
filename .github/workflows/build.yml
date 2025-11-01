@@ -1,71 +1,64 @@
-# Workflow name
-name: Build Docker Image (Experiment-9.2)
+name: Manually Build React App (Experiment-7)
 
 on:
   push:
-    branches: [ "main" ]
-    # Only run if files in this specific project folder are changed
+    branches:
+      - main
     paths:
-      - 'docker-project/experiment-9.2/**'
+      - 'react-projects/Experiment-7/'
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
     paths:
-      - 'docker-project/experiment-9.2/**'
-
-# Permissions for logging into package registries like Docker Hub
-permissions:
-  contents: read
-  packages: write
+      - 'react-projects/Experiment-7/'
+  
+  workflow_dispatch: # given button to run worflow manually
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
-    # Set the default directory for all 'run' commands
     defaults:
       run:
-        working-directory: ./docker-project/experiment-9.2
+        working-directory: react-projects/Experiment-7
 
+        
     steps:
-      # 1. Get the code from the repository
+      # Step 1: Checkout code
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2. Set up Node.js
+      # Step 2: Set up Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      # 3. Install dependencies and run build (as a test)
-      - name: Install dependencies and test build
+      # Step 3: Install dependencies and build React app
+      - name: Install dependencies and build
         run: |
-          # --- YAHAN CHANGE KIYA GAYA HAI ---
-          # 'npm ci' ki jagah 'npm install' istemal karein
-          # Kyunki 'package-lock.json' sync error de raha tha
-          npm install
+          npm ci
           npm run build
 
-      # 4. Set up Docker Buildx (for building the image)
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      # Step 4: Build Docker image
+      - name: Build Docker Image
+        run: |
+          docker build -t react-experiment-7 .
+      
+      - name: Check Docker Username (for debug only)
+        run: echo "Docker user is $DOCKER_USERNAME"
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
 
-      # 5. Login to Docker Hub (only on 'main' branch push)
+      # Step 5 (Optional): Push to Docker Hub
       - name: Login to Docker Hub
-        # This 'if' check ensures it only runs on pushes to main
         if: github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 6. Build and Push Image to Docker Hub
-      - name: Build and push Docker Image
+      - name: Push Image to Docker Hub
         if: github.ref == 'refs/heads/main'
         run: |
-          # Build the image and tag it
-          # We are in the working-directory, so '.' points to experiment-9.2
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/experiment-9.2:latest .
-          
-          # Push the image
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/experiment-9.2:latest
+          docker tag react-experiment-7 ${{ secrets.DOCKERHUB_USERNAME }}/react-experiment-7:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/react-experiment-7:latest
