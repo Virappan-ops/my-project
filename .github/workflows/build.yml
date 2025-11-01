@@ -38,10 +38,12 @@ jobs:
           node-version: '20'
 
       # 3. Install dependencies and run build (as a test)
-      # Your Dockerfile also does this, but this is good for CI
       - name: Install dependencies and test build
         run: |
-          npm ci
+          # --- YAHAN CHANGE KIYA GAYA HAI ---
+          # 'npm ci' ki jagah 'npm install' istemal karein
+          # Kyunki 'package-lock.json' sync error de raha tha
+          npm install
           npm run build
 
       # 4. Set up Docker Buildx (for building the image)
@@ -67,4 +69,3 @@ jobs:
           
           # Push the image
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/experiment-9.2:latest
-
