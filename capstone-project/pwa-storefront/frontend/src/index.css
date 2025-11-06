@@ -1,0 +1,37 @@
+/* Basic CSS Reset */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* Sabhi elements ke liye behtar box-model */
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  color: #333;
+  background-color: #f4f4f4; /* Halka sa grey background */
+}
+
+/* App container ko full-screen aur center karne ke liye */
+html,
+body,
+#root {
+  height: 100%; /* Poori height lene ke liye */
+  width: 100%;  /* Poori width lene ke liye */
+}
+
+#root {
+  /* Flexbox ka istemal karke content ko perfectly center karein */
+  display: flex;
+  justify-content: center; /* Horizontally center */
+  align-items: flex-start;   /* Vertically start */
+  text-align: center;      /* Text ko center */
+}
+
+/* Ek main container bana lete hain taaki content chipka hua na lage */
+.app-container {
+  max-width: 1200px;
+  width: 100%;
+  padding: 1rem;
+  background-color: #ffffff;
+  margin-top: 80px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
