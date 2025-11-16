@@ -1,6 +1,11 @@
-import React, { createContext, useState, useEffect } from 'react';
+// src/context/AuthContext.jsx
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+
+// --- YEH RAHA FIX ---
+// 'getAllCartItems' ko 'getCartItems' kar diya
 import { getCartItems, clearCart, addOrUpdateCartItem } from '../utils/db';
+// --- FIX KHATAM ---
 
 export const AuthContext = createContext(null);
 
@@ -10,15 +15,17 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // This function runs only ONCE when the app first loads
     const syncAndLoadUser = async () => {
       const storedToken = localStorage.getItem('token');
       if (storedToken) {
         axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
 
         try {
-          // --- "LOCAL WINS" SYNC LOGIC ---
-          const localCart = await getCartItems();
+          // "LOCAL WINS" SYNC LOGIC
+          // --- YEH RAHA FIX ---
+          const localCart = await getCartItems(); // 'getAllCartItems' ko badla
+          // --- FIX KHATAM ---
+          
           const updatedRes = await axios.post('/api/cart/update', { cart: localCart });
           const finalCart = updatedRes.data; 
 
@@ -39,7 +46,7 @@ export function AuthProvider({ children }) {
     };
 
     syncAndLoadUser();
-  }, []); // Empty '[]' ensures this runs only ONCE per page load
+  }, []);
 
   // --- LOGIN FUNCTION ---
   const login = async (loginData) => {
@@ -50,7 +57,9 @@ export function AuthProvider({ children }) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${loginData.token}`;
 
       const serverCart = loginData.user.cart || [];
-      const localCart = await getCartItems();
+      // --- YEH RAHA FIX ---
+      const localCart = await getCartItems(); // 'getAllCartItems' ko badla
+      // --- FIX KHATAM ---
 
       const mergedCartMap = new Map();
       serverCart.forEach(item => mergedCartMap.set(item.productId, item));

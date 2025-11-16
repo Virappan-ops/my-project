@@ -1,3 +1,4 @@
+// src/components/ProductCard.jsx
 import React, { useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
@@ -5,70 +6,81 @@ import { addOrUpdateCartItem } from '../utils/db';
 import { useOnlineStatus } from '../useOnlineStatus';
 import { Box, Typography } from '@mui/material';
 
-// --- STYLING (Sab naya hai) ---
+// --- STYLING ---
 
 const cardStyle = {
   display: 'flex',
   flexDirection: 'column',
-  width: '300px', // Thoda chauda
+  // --- YAHAN BADLAAV KIYA GAYA HAI ---
+  width: '360px', // Pehle 300px tha, ab bada kar diya
+  // --- BADLAAV KHATAM ---
   margin: '16px',
-  borderRadius: '12px', // Thoda kam round
+  borderRadius: '16px', 
   
-  // Solid, theme-aware background
-  bgcolor: 'background.paper', 
+  // Glassy Effect (Pehle jaisa)
+  bgcolor: 'transparent', 
+  backdropFilter: 'blur(16px)',
+  WebkitBackdropFilter: 'blur(16px)', 
+  border: (theme) => 
+    theme.palette.mode === 'light' 
+      ? '1px solid rgba(255, 255, 255, 0.4)'
+      : '1px solid rgba(255, 255, 255, 0.1)',
+  boxShadow: (theme) => 
+    theme.palette.mode === 'light' 
+      ? '0 4px 30px rgba(0, 0, 0, 0.1)'
+      : '0 4px 30px rgba(0, 0, 0, 0.4)',
   
-  // Subtle, theme-aware shadow
-  boxShadow: (theme) => theme.shadows[3],
-  
-  overflow: 'hidden', // Image zoom ko contain karne ke liye
+  overflow: 'hidden',
   textAlign: 'left',
-  
-  // Premium Hover Effects
   transition: 'all 0.3s ease-in-out',
   '&:hover': {
-    transform: 'translateY(-4px) scale(1.02)', // Halki lift
-    boxShadow: (theme) => theme.shadows[6], // Shadow badhegi
-    // Image ko zoom karein (neeche dekhein)
+    transform: 'translateY(-4px) scale(1.02)', 
+    boxShadow: (theme) => 
+      theme.palette.mode === 'light' 
+        ? '0 8px 40px rgba(0, 0, 0, 0.15)' 
+        : '0 8px 40px rgba(0, 0, 0, 0.6)', 
     '& .product-image': {
       transform: 'scale(1.1)',
     }
   },
 };
 
+// ... (Baaki styles waise hi hain) ...
 const imageContainerStyle = {
   width: '100%',
   height: '220px',
-  overflow: 'hidden', // Image ko crop karega
+  overflow: 'hidden', 
 };
 
 const imgStyle = {
   width: '100%',
   height: '100%',
   objectFit: 'cover',
-  transition: 'transform 0.4s ease-in-out', // Zoom animation
+  transition: 'transform 0.4s ease-in-out', 
 };
 
 const contentStyle = {
-  padding: '24px', // Zyaada spacing
+  padding: '24px', 
   display: 'flex',
   flexDirection: 'column',
   flexGrow: 1,
 };
 
-// --- COMPONENT ---
+
+// --- COMPONENT (Conditional Video/Image ke saath) ---
 
 function ProductCard({ product }) {
   const { token, user, setUser } = useContext(AuthContext);
   const isOnline = useOnlineStatus();
 
   const handleAddToCart = async () => {
-    // ... (logic mein koi change nahi)
+    // ... (Aapka logic, ismein koi badlaav nahi) ...
     const itemToAdd = {
       productId: product._id,
       name: product.name,
       price: product.price,
       quantity: 1,
-      imageUrl: product.imageUrl
+      imageUrl: product.imageUrl 
     };
 
     if (token && isOnline) {
@@ -94,83 +106,78 @@ function ProductCard({ product }) {
 
   return (
     <Box sx={cardStyle}>
-      {/* Image Container (Zoom ke liye) */}
       <Box sx={imageContainerStyle}>
-        <img 
-          src={product.imageUrl} 
-          alt={product.name} 
-          style={imgStyle}
-          className="product-image" // Hover target ke liye
-        />
+        
+        {product.videoUrl ? (
+          <video 
+            src={product.videoUrl} 
+            style={imgStyle}
+            className="product-image" 
+            autoPlay
+            loop 
+            muted 
+            playsInline
+          />
+        ) : (
+          <img 
+            src={product.imageUrl} 
+            alt={product.name} 
+            style={imgStyle}
+            className="product-image"
+          />
+        )}
+        
       </Box>
       
       <Box sx={contentStyle}>
+        {/* ... (Baaki saara content waise ka waisa) ... */}
         <Typography 
-          variant="h6" // Title thoda chhota
+          variant="h6" 
           component="h3" 
-          sx={{ 
-            fontWeight: 600, 
-            color: 'text.primary',
-            letterSpacing: '0.5px' // "Luxury" touch
-          }}
+          sx={{ fontWeight: 600, color: 'text.primary', letterSpacing: '0.5px' }}
         >
           {product.name}
         </Typography>
         
         <Typography 
           variant="body2" 
-          sx={{ 
-            color: 'text.secondary',
-            minHeight: '40px',
-            margin: '8px 0' 
-          }}
+          sx={{ color: 'text.secondary', minHeight: '40px', margin: '8px 0' }}
         >
           {product.description}
         </Typography>
         
         <Typography 
-          variant="h5" // Price ko prominent banaya
+          variant="h5" 
           component="h4" 
-          sx={{ 
-            fontWeight: 700, 
-            my: 1.5, // Vertical spacing
-            color: 'text.primary'
-          }}
+          sx={{ fontWeight: 700, my: 1.5, color: 'text.primary' }}
         >
           ${product.price.toFixed(2)}
         </Typography>
         
         <Typography 
           variant="body2" 
-          sx={{ 
-            color: 'text.secondary',
-            marginBottom: '24px' // Button se pehle zyaada space
-          }}
+          sx={{ color: 'text.secondary', marginBottom: '24px' }}
         >
           In Stock: {product.stock}
         </Typography>
         
-        {/* --- NAYA PREMIUM BUTTON --- */}
         <Box
           component="button"
           onClick={handleAddToCart}
           sx={{
-            // High-contrast, theme-aware colors
             bgcolor: (theme) => (theme.palette.mode === 'light' ? '#111' : '#fff'),
             color: (theme) => (theme.palette.mode === 'light' ? '#fff' : '#000'),
-            
             border: 'none',
-            padding: '14px 16px', // Thoda tall button
+            padding: '14px 16px', 
             borderRadius: '8px',
             cursor: 'pointer',
             marginTop: 'auto', 
             width: '100%',
             fontSize: '0.9rem',
             fontWeight: 'bold',
-            letterSpacing: '1px', // "Luxury" touch
-            textTransform: 'uppercase', // "Luxury" touch
+            letterSpacing: '1px',
+            textTransform: 'uppercase', 
             transition: 'all 0.3s ease',
-            
             '&:hover': {
               bgcolor: (theme) => (theme.palette.mode === 'light' ? '#333' : '#eee'),
               transform: 'scale(1.02)',

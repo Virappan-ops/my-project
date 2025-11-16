@@ -1,3 +1,4 @@
+// App.jsx
 import React, { useContext, useEffect, useState, useMemo } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthContext } from './context/AuthContext';
@@ -6,7 +7,7 @@ import { useOnlineStatus } from './useOnlineStatus';
 // --- MUI Theme Imports ---
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { ThemeContext } from './context/ThemeContext'; // Hamara naya context
+import { ThemeContext } from './context/ThemeContext'; // Aapka context
 // -------------------------
 
 import HomePage from './pages/HomePage';
@@ -20,33 +21,59 @@ import OfflineBanner from './components/OfflineBanner';
 import Sidebar from './components/Sidebar';
 import SyncBanner from './components/SyncBanner';
 
+// --- YEH NAYE GRADIENT COLORS HAIN (OPTION 1 WALE) ---
+const lightColors = {
+  bg: '#f0f2f5', // Light grey BG
+  color1: 'hsla(210, 60%, 70%, 0.3)', // Light blue
+  color2: 'hsla(340, 60%, 70%, 0.3)', // Light pink
+  color3: 'hsla(190, 60%, 70%, 0.3)', // Light cyan
+};
+
+const darkColors = {
+  bg: '#121212', // Dark BG
+  color1: 'hsla(210, 60%, 40%, 0.4)', // Deeper blue
+  color2: 'hsla(340, 60%, 40%, 0.4)', // Deeper pink
+  color3: 'hsla(190, 60%, 40%, 0.4)', // Deeper cyan
+};
+// --- YAHAN TAK ---
+
 function App() {
   const { token } = useContext(AuthContext);
   const isOnline = useOnlineStatus();
   const [syncing, setSyncing] = useState(false);
   
-  // --- NAYA THEME CODE ---
+  // --- AAPKA THEME CODE ---
   const { mode } = useContext(ThemeContext); 
 
   const theme = useMemo(() => {
-    // --- YEH AAPKA NAYA GRADIENT HAI ---
-    const lightGradient = 'linear-gradient(120deg, #e6f7ff 0%, #f0f8ff 100%)'; // Light Bluish
-    const darkGradient = 'linear-gradient(120deg, #2d3436 0%, #000000 100%)';
+    
+    // Yahan check hota hai 'light' hai ya 'dark'
+    const colors = mode === 'light' ? lightColors : darkColors;
 
     return createTheme({
       palette: {
         mode: mode,
+        // Background ka default color set kiya
         background: {
-          default: mode === 'light' ? lightGradient : darkGradient,
+          default: colors.bg, 
         },
       },
       components: {
         MuiCssBaseline: {
           styleOverrides: {
             body: {
-              backgroundImage: mode === 'light' ? lightGradient : darkGradient,
+              // --- YAHAN BADLAAV KIYA GAYA HAI ---
+              // Aapke linear-gradient ko naye mesh gradient se badal diya
+              backgroundColor: colors.bg,
+              backgroundImage: `
+                radial-gradient(at 0% 0%, ${colors.color1} 0px, transparent 50%),
+                radial-gradient(at 100% 100%, ${colors.color2} 0px, transparent 50%),
+                radial-gradient(at 0% 100%, ${colors.color3} 0px, transparent 50%)
+              `,
+              // --- BADLAAV KHATAM ---
+              
               backgroundAttachment: 'fixed',
-              backgroundSize: 'cover',
+              transition: 'background-color 0.3s ease, background-image 0.3s ease',
             },
           },
         },
@@ -55,7 +82,7 @@ function App() {
   }, [mode]);
   // --- END THEME CODE ---
 
-  // ... (aapka baaki useEffect logic waise ka waisa rahega) ...
+  // ... (Aapka baaki useEffect logic waise ka waisa rahega) ...
   
   useEffect(() => {
     if (isOnline && 'serviceWorker' in navigator) {
@@ -98,6 +125,7 @@ function App() {
 
         <div className="app-container">
           <Routes>
+            {/* ... Aapke saare routes ... */}
             <Route
               path="/login"
               element={!token ? <LoginPage /> : <Navigate to="/home" replace />}

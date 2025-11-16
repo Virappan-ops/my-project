@@ -1,103 +1,121 @@
-/* eslint-disable no-restricted-globals */
-
+// src/sw.js
 import { precacheAndRoute } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
-import { StaleWhileRevalidate, CacheFirst } from 'workbox-strategies';
-import { openDB } from 'idb';
+import { StaleWhileRevalidate, NetworkFirst } from 'workbox-strategies';
+import { clientsClaim } from 'workbox-core';
 
-// --- Backend ka poora URL ---
-const API_BASE_URL = 'http://localhost:5000'; 
-
-// 1. Pre-caching
 precacheAndRoute(self.__WB_MANIFEST || []);
 
-// 2. Runtime Caching (Products & Images)
+self.skipWaiting();
+clientsClaim();
+
+// 1. API Calls (Network First)
 registerRoute(
-  ({ url }) => url.pathname.startsWith('/api/products'),
-  new StaleWhileRevalidate({ cacheName: 'api-product-cache' })
+  ({ url }) => url.pathname.startsWith('/api/'),
+  new NetworkFirst({ cacheName: 'api-cache' })
 );
+
+// 2. Assets (Stale While Revalidate)
 registerRoute(
-  ({ request }) => request.destination === 'image',
-  new CacheFirst({ cacheName: 'image-cache' })
+  ({ request }) => request.destination === 'image' || request.destination === 'font',
+  new StaleWhileRevalidate({ cacheName: 'assets-cache' })
 );
 
-// 3. --- BACKGROUND SYNC LOGIC ---
-const DB_NAME = 'pwa-store-db';
-const SYNC_QUEUE_STORE = 'sync-queue';
+// ----------------------------------------------------
+// --- OFFLINE ORDER SYNC LOGIC (FIXED) ---
+// ----------------------------------------------------
 
-async function getDb() {
-  return openDB(DB_NAME, 2); // Ye 'db.js' se match hona chahiye
-}
+// 1. IndexedDB library import
+importScripts('https://cdn.jsdelivr.net/npm/idb@7/build/iife/index-min.js');
 
-// --- NEW: Helper to send messages to the app ---
-async function broadcastToClients(message) {
-  const clients = await self.clients.matchAll();
-  clients.forEach(client => {
-    client.postMessage(message);
-  });
-}
+// 2. DB helper functions (db.js se match karte hue)
+const DB_NAME = 'e-com-db';
+const DB_VERSION = 1; 
 
-// Sync event ko suno
+// 'syncQueue' se data nikalega
+const getAllSyncActions = async () => {
+  const db = await idb.openDB(DB_NAME, DB_VERSION);
+  return db.getAll('syncQueue');
+};
+
+// 'syncQueue' ko clear karega
+const clearSyncQueue = async () => {
+  const db = await idb.openDB(DB_NAME, DB_VERSION);
+  await db.clear('syncQueue');
+};
+
+
+// 3. 'sync' event ko suno
 self.addEventListener('sync', (event) => {
-  console.log('[Service Worker] Sync event received!', event.tag);
-  if (event.tag === 'sync-new-order') { 
-    event.waitUntil(processSyncQueue());
+  // Yeh tag aapki CartPage.jsx se match ho raha hai
+  if (event.tag === 'sync-new-order') {
+    console.log('[SW] Sync event triggered: sync-new-order');
+    postMessageToClient('SYNC_START');
+    
+    event.waitUntil(
+      syncPendingCheckouts()
+        .then(() => {
+          console.log('[SW] Sync complete!');
+          postMessageToClient('SYNC_COMPLETE');
+        })
+        .catch((err) => {
+          console.error('[SW] Sync failed:', err);
+          postMessageToClient('SYNC_FAILED');
+        })
+    );
   }
 });
 
-// --- NEW: Listen for messages from the app (e.g., "MANUAL_SYNC") ---
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-  if (event.data && event.data.type === 'MANUAL_SYNC') {
-    console.log('[Service Worker] Manual sync triggered from app.');
-    event.waitUntil(processSyncQueue());
-  }
-});
-
-// Queue ko process karne ka function
-async function processSyncQueue() {
-  // --- NEW: Tell the app we are starting the sync ---
-  await broadcastToClients({ type: 'SYNC_START' });
+// 4. Server ko data bhejne wala function (FIXED)
+async function syncPendingCheckouts() {
+  const allActions = await getAllSyncActions();
   
-  const db = await getDb();
-  const allActions = await db.getAll(SYNC_QUEUE_STORE); 
-  
-  console.log(`[Service Worker] Found ${allActions.length} items in sync queue.`);
-  let syncFailed = false;
+  // Sirf checkout wale actions ko filter karo
+  const checkoutActions = allActions.filter(action => action.type === 'checkout');
 
-  for (const action of allActions) {
-    try {
-      console.log('[Service Worker] Processing action:', action);
+  if (checkoutActions.length === 0) {
+    console.log('[SW] No pending checkout actions to sync.');
+    return;
+  }
 
-      const response = await fetch(`${API_BASE_URL}/api/orders/checkout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${action.token}`
-        },
-        body: JSON.stringify(action.payload),
-      });
+  console.log(`[SW] Syncing ${checkoutActions.length} pending checkouts...`);
 
-      if (response.ok) {
-        console.log(`[Service Worker] Action ID ${action.id} synced successfully.`);
-        await db.delete(SYNC_QUEUE_STORE, action.id);
-      } else {
-        console.error(`[Service Worker] Action ID ${action.id} failed to sync.`, response);
-        if (response.status === 401) { // Bad token, delete it
-          await db.delete(SYNC_QUEUE_STORE, action.id);
-        } else {
-          syncFailed = true; // Keep it for next sync
-        }
-      }
-    } catch (err) {
-      console.error('[Service Worker] Sync fetch error:', err);
-      syncFailed = true; // Network error, keep it for next sync
+  const promises = checkoutActions.map(action => {
+    const orderData = action.payload; // payload ko nikalo
+    const token = action.token;       // token ko nikalo
+
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    
+    // Agar token hai, toh header mein add karo
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
-  }
 
-  // --- NEW: Tell the app we are finished ---
-  await broadcastToClients({ type: 'SYNC_COMPLETE', failed: syncFailed });
-  console.log('[Service Worker] Sync processing finished.');
+    return fetch('/api/orders/checkout', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(orderData),
+    });
+  });
+
+  const responses = await Promise.all(promises);
+  const allSuccessful = responses.every(res => res.ok);
+
+  if (allSuccessful) {
+    console.log('[SW] All pending checkouts synced successfully.');
+    await clearSyncQueue();
+  } else {
+    console.error('[SW] Some pending checkouts failed to sync.');
+    throw new Error('Sync failed, will retry later.');
+  }
+}
+
+// 5. Client (React app) ko message bhejne wala helper
+async function postMessageToClient(messageType) {
+  const clients = await self.clients.matchAll({ includeUncontrolled: true, type: 'window' });
+  clients.forEach(client => {
+    client.postMessage({ type: messageType });
+  });
 }

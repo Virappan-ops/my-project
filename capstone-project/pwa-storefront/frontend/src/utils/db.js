@@ -1,62 +1,62 @@
+// src/utils/db.js
 import { openDB } from 'idb';
 
-const DB_NAME = 'pwa-store-db';
-const DB_VERSION = 2; // Version 2
-const CART_STORE = 'cart-items';
-const SYNC_QUEUE_STORE = 'sync-queue'; // This MUST match sw.js
+const DB_NAME = 'e-com-db';
+const DB_VERSION = 1;
 
-async function initDB() {
-  const db = await openDB(DB_NAME, DB_VERSION, {
-    upgrade(db, oldVersion) {
-      switch (oldVersion) {
-        case 0:
-          console.log('Database creating (v0 -> v2)');
-          db.createObjectStore(CART_STORE, { keyPath: 'productId' });
-          db.createObjectStore(SYNC_QUEUE_STORE, { autoIncrement: true, keyPath: 'id' });
-          break;
-        case 1:
-          console.log('Database upgrading (v1 -> v2)');
-          db.createObjectStore(SYNC_QUEUE_STORE, { autoIncrement: true, keyPath: 'id' });
-          break;
+const initDB = () => {
+  return openDB(DB_NAME, DB_VERSION, {
+    upgrade(db) {
+      // 1. Cart store
+      if (!db.objectStoreNames.contains('cart')) {
+        db.createObjectStore('cart', { keyPath: 'productId' });
+      }
+      
+      // 2. Sync Queue store (Aapke CartPage ke hisaab se)
+      if (!db.objectStoreNames.contains('syncQueue')) {
+        db.createObjectStore('syncQueue', { keyPath: 'id', autoIncrement: true });
       }
     },
   });
-  return db;
-}
+};
 
 // --- Cart Functions ---
-export async function addOrUpdateCartItem(item) {
-  const db = await initDB();
-  await db.put(CART_STORE, item); // 'put' overwrites, fixing duplicate bug
-}
 
-export async function getCartItems() {
+export const addOrUpdateCartItem = async (item) => {
   const db = await initDB();
-  return db.getAll(CART_STORE);
-}
+  await db.put('cart', item);
+};
 
-export async function removeCartItem(productId) {
+// 'getCartItems' (bina "All") - yahi AuthContext ko chahiye
+export const getCartItems = async () => {
   const db = await initDB();
-  await db.delete(CART_STORE, productId);
-}
+  return db.getAll('cart');
+};
 
-export async function clearCart() {
+export const removeCartItem = async (productId) => {
   const db = await initDB();
-  await db.clear(CART_STORE);
-}
+  await db.delete('cart', productId);
+};
 
-// --- SYNC QUEUE Functions (Correct) ---
-export async function addToSyncQueue(action) {
+export const clearCart = async () => {
   const db = await initDB();
-  return db.add(SYNC_QUEUE_STORE, action);
-}
+  await db.clear('cart');
+};
 
-export async function getSyncQueue() {
-  const db = await initDB();
-  return db.getAll(SYNC_QUEUE_STORE);
-}
+// --- Sync Queue Functions (Aapke CartPage ke hisaab se) ---
 
-export async function removeFromSyncQueue(actionId) {
+export const addToSyncQueue = async (action) => {
   const db = await initDB();
-  return db.delete(SYNC_QUEUE_STORE, actionId);
-}
+  await db.add('syncQueue', action);
+};
+
+// Yeh functions SW ke liye hain
+export const getAllSyncActions = async () => {
+  const db = await initDB();
+  return db.getAll('syncQueue');
+};
+
+export const clearSyncQueue = async () => {
+  const db = await initDB();
+  await db.clear('syncQueue');
+};

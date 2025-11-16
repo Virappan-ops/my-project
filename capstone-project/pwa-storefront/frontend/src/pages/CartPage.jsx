@@ -1,3 +1,5 @@
+// src/pages/CartPage.jsx
+// YEH AAPKA CODE HAI AUR YEH SAHI HAI
 import React, { useState, useEffect, useContext } from 'react';
 import { getCartItems, removeCartItem, clearCart, addToSyncQueue } from '../utils/db';
 import axios from 'axios';
@@ -24,7 +26,7 @@ function CartPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { token, user, setUser, loading: authLoading } = useContext(AuthContext);
-  const isOnline = useOnlineStatus(); // Using the reliable hook
+  const isOnline = useOnlineStatus(); 
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,7 +55,7 @@ function CartPage() {
   // Remove item logic
   const handleRemove = async (productId) => {
     const newCart = items.filter(item => item.productId !== productId);
-    setItems(newCart); // Optimistic UI
+    setItems(newCart); 
 
     if (token && isOnline) {
       try {
@@ -83,7 +85,6 @@ function CartPage() {
       totalAmount: total.toFixed(2),
     };
 
-    // Use the reliable 'isOnline' hook state
     if (isOnline) {
       try {
         const config = { headers: { Authorization: `Bearer ${token}` } };
@@ -100,7 +101,6 @@ function CartPage() {
         await queueCheckout(orderData); // Fallback to queue
       }
     } else {
-      // User is OFFLINE, queue the checkout
       await queueCheckout(orderData);
     }
   };
@@ -111,7 +111,7 @@ function CartPage() {
       type: 'checkout',
       payload: orderData,
       timestamp: Date.now(),
-      token: token || null // Save the token for the SW
+      token: token || null 
     };
 
     try {
@@ -120,7 +120,8 @@ function CartPage() {
       
       if ('serviceWorker' in navigator && 'SyncManager' in window) {
         const swRegistration = await navigator.serviceWorker.ready;
-        await swRegistration.sync.register('sync-new-order'); // Register the correct tag
+        await swRegistration.sync.register('sync-new-order');
+ag
         console.log('Background sync registered: sync-new-order');
       }
     } catch (err) {
@@ -132,7 +133,7 @@ function CartPage() {
     navigate('/home');
   };
 
-  // Render logic (No changes)
+  // Render logic
   if (loading || authLoading) {
     return (
       <Box sx={centerStyle}><CircularProgress /></Box>
