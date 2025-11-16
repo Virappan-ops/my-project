@@ -2,217 +2,182 @@ import React, { useState, useEffect, useContext } from 'react';
 import { getCartItems, removeCartItem, clearCart, addToSyncQueue } from '../utils/db';
 import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext'; // AuthContext
-import { useOnlineStatus } from '../useOnlineStatus'; // Online Status
+import { AuthContext } from '../context/AuthContext';
+import { useOnlineStatus } from '../useOnlineStatus';
 
-// --- Material-UI Imports ---
 import { 
   Container, Typography, Box, CircularProgress, Alert, List, ListItem, 
-  ListItemAvatar, Avatar, ListItemText, IconButton, Button, Paper, Fade, Grid 
+  ListItemAvatar, Avatar, ListItemText, IconButton, Button, Paper, 
+  Fade, Grid, Divider 
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ShoppingCartCheckoutIcon from '@mui/icons-material/ShoppingCartCheckout';
+import RemoveShoppingCartOutlinedIcon from '@mui/icons-material/RemoveShoppingCartOutlined';
 
 // --- Styling ---
-const centerStyle = {
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  minHeight: '50vh',
-};
-
-// Naya Glassy Item Style
-const glassyItemStyle = {
-  marginBottom: '16px',
-  padding: '16px',
-  borderRadius: '16px',
-  background: 'rgba(255, 255, 255, 0.25)',
-  backdropFilter: 'blur(10px)',
-  border: '1px solid rgba(255, 255, 255, 0.18)',
-  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.1)',
-  transition: 'transform 0.3s ease',
-  '&:hover': {
-    transform: 'scale(1.02)'
-  }
-};
-
-// Summary Box Style
-const summaryBoxStyle = {
-  ...glassyItemStyle,
-  padding: '24px',
-  position: 'sticky', // Ye scroll karne par bhi wahi rahega
-  top: '100px', // AppBar ke niche se
-};
-
-// Animated Checkout Button Style
-const animatedCheckoutBtn = {
-  padding: '12px 20px',
-  fontSize: '1rem',
-  fontWeight: 'bold',
-  marginTop: '20px',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    transform: 'scale(1.03)',
-    backgroundColor: 'success.dark' // Darker green on hover
-  }
-};
-
-// --- Component ---
+const centerStyle = { display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', textAlign: 'center' };
+const glassyItemStyle = { marginBottom: '16px', padding: '16px', borderRadius: '16px', background: 'rgba(255,255,255,0.25)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.18)', boxShadow: '0 8px 32px 0 rgba(31,38,135,0.1)', transition: 'transform 0.3s ease' };
+const summaryBoxStyle = { ...glassyItemStyle, padding: '24px', position: 'sticky', top: '100px' };
+const animatedCheckoutBtn = { padding: '12px 20px', fontSize: '1rem', fontWeight: 'bold', marginTop: '20px', transition: 'all 0.3s ease' };
 
 function CartPage() {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // --- YE LOGIC BHI ADD KAREIN ---
-  // Ye server cart se remove/checkout ko handle karega
-  const { token, user, setUser } = useContext(AuthContext);
-  const isOnline = useOnlineStatus();
-  // ------------------------------
+  const { token, user, setUser, loading: authLoading } = useContext(AuthContext);
+  const isOnline = useOnlineStatus(); // Using the reliable hook
 
-  // --- LOGIC FUNCTIONS (Aapke Puraane Code Se) ---
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const loadCart = async () => {
-    setLoading(true);
-    try {
-      const cartItems = await getCartItems();
-      setItems(cartItems || []);
-    } catch (err) {
-      console.error("Error loading cart:", err);
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Load cart logic
   useEffect(() => {
-    loadCart();
-  }, [location]);
+    const loadCart = async () => {
+      setLoading(true);
+      if (isOnline && token) {
+        setItems(user?.cart || []); // If online, use synced context data
+      } else {
+        try {
+          // If offline, read from local DB
+          const dbItems = await getCartItems();
+          setItems(dbItems || []);
+        } catch (err) {
+          console.error("Error loading local cart:", err);
+          setItems([]);
+        }
+      }
+      setLoading(false);
+    };
+    if (!authLoading) loadCart();
+  }, [location, isOnline, authLoading, user, token]);
 
-  // --- REMOVE HANDLER (Updated) ---
+  // Remove item logic
   const handleRemove = async (productId) => {
+    const newCart = items.filter(item => item.productId !== productId);
+    setItems(newCart); // Optimistic UI
+
     if (token && isOnline) {
-      // Scenario 1: User Logged-in hai aur Online hai
       try {
         const res = await axios.delete(`/api/cart/remove/${productId}`);
-        setUser({ ...user, cart: res.data }); // Auth context ko update karein
-        await removeCartItem(productId); // Local DB se bhi remove karein
+        setUser({ ...user, cart: res.data });
+        await removeCartItem(productId);
       } catch (err) {
         console.error("Error removing from server cart:", err);
       }
     } else {
-      // Scenario 2: User Offline hai ya Guest hai
-      await removeCartItem(productId);
+      await removeCartItem(productId); // Offline removal
     }
-    
-    alert('Item removed!');
-    loadCart(); // UI ko refresh karein
   };
 
-  // --- CHECKOUT LOGIC (Aapka Puraana Code) ---
+  // Checkout logic
   const handleCheckout = async () => {
     if (!items || items.length === 0) return;
-
-    const total = (items || []).reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-    // Order data mein 'imageUrl' ko bhi include karein
+    const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const orderData = {
-      items: items.map(item => ({ // <-- Yahan 'items' ko map karein
+      items: items.map(item => ({
         productId: item.productId,
         name: item.name,
         price: item.price,
         quantity: item.quantity,
-        imageUrl: item.imageUrl || '' // <-- Yahan imageUrl add karein (agar hai)
+        imageUrl: item.imageUrl || ''
       })),
       totalAmount: total.toFixed(2),
     };
-    if (navigator.onLine) {
+
+    // Use the reliable 'isOnline' hook state
+    if (isOnline) {
       try {
-        const response = await axios.post('/api/orders/checkout', orderData);
-        alert(response.data.message);
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const response = await axios.post('/api/orders/checkout', orderData, config);
+        alert(response.data.message || 'Order placed successfully!');
         await clearCart();
-        
-        // Server cart bhi clear karein agar user logged in hai
         if (token) {
-          await axios.post('/api/cart/update', { cart: [] });
+          await axios.post('/api/cart/update', { cart: [] }, config);
           setUser({ ...user, cart: [] });
         }
-        
         navigate('/home');
       } catch (err) {
-        console.error("Online checkout failed:", err);
-        await queueCheckout(orderData);
+        console.error("Online checkout failed, falling back to queue:", err);
+        await queueCheckout(orderData); // Fallback to queue
       }
     } else {
+      // User is OFFLINE, queue the checkout
       await queueCheckout(orderData);
     }
   };
 
+  // Queue checkout logic (Correct)
   const queueCheckout = async (orderData) => {
-    const action = { type: 'checkout', payload: orderData, timestamp: Date.now() };
-    await addToSyncQueue(action);
-    if ('serviceWorker' in navigator && 'SyncManager' in window) {
-      const swRegistration = await navigator.serviceWorker.ready;
-      await swRegistration.sync.register('sync-new-order');
+    const action = {
+      type: 'checkout',
+      payload: orderData,
+      timestamp: Date.now(),
+      token: token || null // Save the token for the SW
+    };
+
+    try {
+      await addToSyncQueue(action);
+      console.log('Order queued in IndexedDB');
+      
+      if ('serviceWorker' in navigator && 'SyncManager' in window) {
+        const swRegistration = await navigator.serviceWorker.ready;
+        await swRegistration.sync.register('sync-new-order'); // Register the correct tag
+        console.log('Background sync registered: sync-new-order');
+      }
+    } catch (err) {
+      console.error('Failed to queue order:', err);
     }
+
     alert("You are currently offline. Your order will be placed as soon as you are back online!");
     await clearCart();
     navigate('/home');
   };
-  // --- (Yahan tak saara logic same hai) ---
 
-
-  // --- NAYA RENDER LOGIC ---
-
-  if (loading) {
+  // Render logic (No changes)
+  if (loading || authLoading) {
     return (
-      <Box sx={centerStyle}>
-        <CircularProgress />
-      </Box>
+      <Box sx={centerStyle}><CircularProgress /></Box>
     );
   }
 
-  const total = (items || []).reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   return (
     <Container maxWidth="lg">
-      <Box sx={{ my: 4 }}> {/* my: 4 matlab margin top/bottom */}
+      <Box sx={{ my: 4 }}>
         <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
           Your Cart
         </Typography>
 
         {(!items || items.length === 0) ? (
-          <Alert severity="info" icon={<ShoppingCartCheckoutIcon />} sx={{ ...glassyItemStyle, justifyContent: 'center' }}>
-            Your cart is empty. Start adding some products!
-          </Alert>
+          <Fade in timeout={500}>
+            <Paper sx={{ ...glassyItemStyle, ...centerStyle, padding: '48px' }}>
+              <RemoveShoppingCartOutlinedIcon sx={{ fontSize: '80px', color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                Your Cart is Empty
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ mt: 1, mb: 3 }}>
+                Looks like you haven't added anything yet.
+              </Typography>
+              <Button variant="contained" size="large" onClick={() => navigate('/home')}>
+                Start Shopping
+              </Button>
+            </Paper>
+          </Fade>
         ) : (
-          // Cart ko 2 columns mein baant denge
           <Grid container spacing={4}>
-            
-            {/* Column 1: Cart Items List */}
             <Grid item xs={12} md={7}>
               <List>
                 {items.map(item => (
-                  <Fade in={true} timeout={500} key={item.productId}>
+                  <Fade in timeout={500} key={item.productId}>
                     <ListItem component={Paper} sx={glassyItemStyle}>
                       <ListItemAvatar>
-                        <Avatar 
-                          variant="rounded" 
-                          src={item.imageUrl} // <-- Image yahan istemal ho rahi hai
-                          sx={{ width: 64, height: 64, mr: 2, background: '#eee' }} 
-                        />
+                        <Avatar variant="rounded" src={item.imageUrl} sx={{ width: 64, height: 64, mr: 2 }} />
                       </ListItemAvatar>
-                      <ListItemText 
+                      <ListItemText
                         primary={<Typography variant="h6" sx={{ fontWeight: 'bold' }}>{item.name}</Typography>}
                         secondary={`Quantity: ${item.quantity} | Total: $${(item.price * item.quantity).toFixed(2)}`}
                       />
-                      <IconButton 
-                        edge="end" 
-                        aria-label="delete"
-                        onClick={() => handleRemove(item.productId)}
-                        title="Remove Item"
-                      >
+                      <IconButton edge="end" aria-label="delete" onClick={() => handleRemove(item.productId)}>
                         <DeleteIcon color="error" />
                       </IconButton>
                     </ListItem>
@@ -221,27 +186,20 @@ function CartPage() {
               </List>
             </Grid>
 
-            {/* Column 2: Summary Box */}
             <Grid item xs={12} md={5}>
               <Paper sx={summaryBoxStyle}>
-                <Typography variant="h4" component="h2" gutterBottom sx={{ fontWeight: 'bold' }}>
+                <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
                   Order Summary
                 </Typography>
-                <Typography variant="h5" sx={{ mt: 2, mb: 3 }}>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="h5" sx={{ mt: 2, mb: 3, fontWeight: 'bold' }}>
                   Total: ${total.toFixed(2)}
                 </Typography>
-                <Button 
-                  variant="contained" 
-                  color="success" 
-                  fullWidth
-                  onClick={handleCheckout}
-                  sx={animatedCheckoutBtn}
-                >
+                <Button variant="contained" color="success" fullWidth onClick={handleCheckout} sx={animatedCheckoutBtn} disabled={items.length === 0}>
                   Proceed to Checkout
                 </Button>
               </Paper>
             </Grid>
-
           </Grid>
         )}
       </Box>

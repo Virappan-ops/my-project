@@ -5,93 +5,99 @@ import { registerRoute } from 'workbox-routing';
 import { StaleWhileRevalidate, CacheFirst } from 'workbox-strategies';
 import { openDB } from 'idb';
 
-// 1. Pre-caching (Vite PWA plugin iske liye yahan code inject karega)
-// 'self.__WB_MANIFEST' ko mat badlein
+// --- Backend ka poora URL ---
+const API_BASE_URL = 'http://localhost:5000'; 
+
+// 1. Pre-caching
 precacheAndRoute(self.__WB_MANIFEST || []);
 
-// 2. Runtime Caching (Jo humne vite.config.js se hataya tha)
-
-// API Caching (Products)
+// 2. Runtime Caching (Products & Images)
 registerRoute(
   ({ url }) => url.pathname.startsWith('/api/products'),
-  new StaleWhileRevalidate({
-    cacheName: 'api-product-cache',
-    plugins: [],
-  })
+  new StaleWhileRevalidate({ cacheName: 'api-product-cache' })
 );
-
-// Image Caching
 registerRoute(
-  /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
-  new CacheFirst({
-    cacheName: 'image-cache',
-    plugins: [],
-  })
+  ({ request }) => request.destination === 'image',
+  new CacheFirst({ cacheName: 'image-cache' })
 );
-
 
 // 3. --- BACKGROUND SYNC LOGIC ---
-
-// Database helper (SW ke andar)
 const DB_NAME = 'pwa-store-db';
 const SYNC_QUEUE_STORE = 'sync-queue';
 
 async function getDb() {
-  return openDB(DB_NAME, 2); // Assume version 2
+  return openDB(DB_NAME, 2); // Ye 'db.js' se match hona chahiye
+}
+
+// --- NEW: Helper to send messages to the app ---
+async function broadcastToClients(message) {
+  const clients = await self.clients.matchAll();
+  clients.forEach(client => {
+    client.postMessage(message);
+  });
 }
 
 // Sync event ko suno
 self.addEventListener('sync', (event) => {
-  console.log('[Service Worker] Sync event sun raha hoon!', event.tag);
-  
-  // Agar 'sync-new-order' tag hai, toh process karo
-  if (event.tag === 'sync-new-order') {
+  console.log('[Service Worker] Sync event received!', event.tag);
+  if (event.tag === 'sync-new-order') { 
+    event.waitUntil(processSyncQueue());
+  }
+});
+
+// --- NEW: Listen for messages from the app (e.g., "MANUAL_SYNC") ---
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  if (event.data && event.data.type === 'MANUAL_SYNC') {
+    console.log('[Service Worker] Manual sync triggered from app.');
     event.waitUntil(processSyncQueue());
   }
 });
 
 // Queue ko process karne ka function
 async function processSyncQueue() {
+  // --- NEW: Tell the app we are starting the sync ---
+  await broadcastToClients({ type: 'SYNC_START' });
+  
   const db = await getDb();
+  const allActions = await db.getAll(SYNC_QUEUE_STORE); 
   
-  // 1. Queue se saare pending orders nikaalo
-  const allActions = await db.getAll(SYNC_QUEUE_STORE);
-  
-  console.log(`[Service Worker] Sync queue mein ${allActions.length} item mile.`);
+  console.log(`[Service Worker] Found ${allActions.length} items in sync queue.`);
+  let syncFailed = false;
 
   for (const action of allActions) {
     try {
-      console.log('[Service Worker] Action process kar raha hoon:', action);
+      console.log('[Service Worker] Processing action:', action);
 
-      // 2. Server ko 'fetch' (POST) request bhejo
-      const response = await fetch('/api/orders/checkout', {
+      const response = await fetch(`${API_BASE_URL}/api/orders/checkout`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${action.token}`
         },
-        body: JSON.stringify(action.payload), // Order data bhejo
+        body: JSON.stringify(action.payload),
       });
 
       if (response.ok) {
-        // 3a. Agar successful, toh queue se delete kar do
-        console.log(`[Service Worker] Action ID ${action.id} safaltapurvak sync hua.`);
+        console.log(`[Service Worker] Action ID ${action.id} synced successfully.`);
         await db.delete(SYNC_QUEUE_STORE, action.id);
       } else {
-        // 3b. Agar fail hua (e.g., server 500 error), toh log karo
-        console.error(`[Service Worker] Action ID ${action.id} sync fail hua.`, response);
-        // Hum ise queue mein chhod denge taaki agle sync mein try ho sake
+        console.error(`[Service Worker] Action ID ${action.id} failed to sync.`, response);
+        if (response.status === 401) { // Bad token, delete it
+          await db.delete(SYNC_QUEUE_STORE, action.id);
+        } else {
+          syncFailed = true; // Keep it for next sync
+        }
       }
     } catch (err) {
-      // 3c. Agar fetch hi fail ho gaya (network firse chala gaya?)
       console.error('[Service Worker] Sync fetch error:', err);
-      // Kuch mat karo, agle sync mein try hoga
+      syncFailed = true; // Network error, keep it for next sync
     }
   }
-}
 
-// Service worker ko update hone par activate karein
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-});
+  // --- NEW: Tell the app we are finished ---
+  await broadcastToClients({ type: 'SYNC_COMPLETE', failed: syncFailed });
+  console.log('[Service Worker] Sync processing finished.');
+}

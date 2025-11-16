@@ -1,29 +1,30 @@
-import React, { useState, useContext } from 'react'; // 'useContext' add karein
-import { AuthContext } from '../context/AuthContext'; // 'AuthContext' ko import karein
+import React, { useState, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
+import { ThemeContext } from '../context/ThemeContext'; // <-- 1. Import ThemeContext
 import { useNavigate } from 'react-router-dom';
 import { 
   AppBar, Toolbar, IconButton, Typography, Drawer, 
   List, ListItem, ListItemButton, ListItemIcon, ListItemText, Box, 
-  Divider, // Divider (line) add karein
-  Badge // Badge component ko import karein
+  Divider, 
+  Badge 
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import HomeIcon from '@mui/icons-material/Home';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import LogoutIcon from '@mui/icons-material/Logout';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+// --- 2. Naye Icons ---
+import Brightness4Icon from '@mui/icons-material/Brightness4'; // Dark mode
+import Brightness7Icon from '@mui/icons-material/Brightness7'; // Light mode
 
 function Sidebar() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   
-  // --- NAYA CODE ---
-  // AuthContext se user aur logout function lein
   const { user, logout } = useContext(AuthContext); 
+  const { mode, toggleTheme } = useContext(ThemeContext); // <-- 3. Context se mode aur toggle lein
   const navigate = useNavigate();
 
-  // Cart mein total items (quantity) calculate karein
   const cartCount = user?.cart?.reduce((acc, item) => acc + item.quantity, 0) || 0;
-  // -----------------
 
   const toggleDrawer = (open) => (event) => {
     if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
@@ -36,13 +37,10 @@ function Sidebar() {
     logout();
   };
 
-  // --- NAYA CODE (Menu Items) ---
-  // Menu items ki list, taaki cart icon update ho sake
   const menuItems = [
     { text: 'Home', icon: <HomeIcon />, path: '/home' },
     { 
       text: 'Cart', 
-      // Cart Icon ko Badge ke saath wrap karein
       icon: (
         <Badge badgeContent={cartCount} color="error">
           <ShoppingCartIcon />
@@ -51,9 +49,7 @@ function Sidebar() {
       path: '/cart' 
     },
     { text: 'My Orders', icon: <ReceiptLongIcon />, path: '/orders' },
-    // Hum yahan 'My Orders' bhi add karenge
   ];
-  // -----------------------------
 
   return (
     <>
@@ -68,9 +64,18 @@ function Sidebar() {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
+          
+          {/* --- 4. Title ko 'flexGrow' diya taaki icon right mein push ho --- */}
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             PWA Storefront
           </Typography>
+
+          {/* --- 5. THEME TOGGLE BUTTON (TOP BAR) --- */}
+          <IconButton sx={{ ml: 1 }} onClick={toggleTheme} color="inherit">
+            {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+          </IconButton>
+          {/* ------------------------------------ */}
+
         </Toolbar>
       </AppBar>
       
@@ -82,14 +87,17 @@ function Sidebar() {
         <Box
           sx={{ width: 250, display: 'flex', flexDirection: 'column', height: '100%' }}
           role="presentation"
-          onClick={toggleDrawer(false)}
+          // onClick={toggleDrawer(false)} <-- Yahan se hataya
           onKeyDown={toggleDrawer(false)}
         >
-          {/* Top Links (Home, Cart) */}
           <List>
             {menuItems.map((item) => (
               <ListItem key={item.text} disablePadding>
-                <ListItemButton onClick={() => navigate(item.path)}>
+                {/* --- 6. UX Fix: Click karne par drawer band ho --- */}
+                <ListItemButton onClick={() => {
+                  navigate(item.path);
+                  toggleDrawer(false)(); // Drawer ko band karein
+                }}>
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.text} />
                 </ListItemButton>
@@ -97,15 +105,10 @@ function Sidebar() {
             ))}
           </List>
 
-          {/* Spacer (taaki footer niche push ho jaaye) */}
           <Box sx={{ flexGrow: 1 }} /> 
-
-          {/* --- NAYA CODE (Footer) --- */}
-          {/* Divider line */}
           <Divider /> 
           
           <List>
-            {/* User Email Item */}
             <ListItem 
               sx={{ 
                 color: 'text.secondary', 
@@ -116,14 +119,17 @@ function Sidebar() {
               <ListItemText
                 primaryTypographyProps={{ fontSize: '0.9rem', fontStyle: 'italic' }}
                 primary="Logged in as:"
-                secondary={user?.email} // User context se email dikhayein
+                secondary={user?.email}
                 secondaryTypographyProps={{ fontSize: '0.9rem', fontWeight: 'bold' }}
               />
             </ListItem>
             
-            {/* Logout Button */}
             <ListItem disablePadding>
-              <ListItemButton onClick={handleLogout}>
+              {/* --- 7. UX Fix: Logout par bhi drawer band ho --- */}
+              <ListItemButton onClick={() => {
+                handleLogout();
+                toggleDrawer(false)(); // Drawer ko band karein
+              }}>
                 <ListItemIcon>
                   <LogoutIcon />
                 </ListItemIcon>
@@ -131,7 +137,6 @@ function Sidebar() {
               </ListItemButton>
             </ListItem>
           </List>
-          {/* ------------------------ */}
         </Box>
       </Drawer>
     </>

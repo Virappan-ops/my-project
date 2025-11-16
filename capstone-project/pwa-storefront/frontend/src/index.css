@@ -6,7 +6,7 @@ body {
   box-sizing: border-box; /* Sabhi elements ke liye behtar box-model */
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   color: #333;
-  background-color: #f4f4f4; /* Halka sa grey background */
+  /* background-color: #f4f4f4; <-- Yeh line hata dein ya override ho jayegi */
 }
 
 /* App container ko full-screen aur center karne ke liye */
@@ -18,7 +18,6 @@ body,
 }
 
 #root {
-  /* Flexbox ka istemal karke content ko perfectly center karein */
   display: flex;
   justify-content: center; /* Horizontally center */
   align-items: flex-start;   /* Vertically start */
@@ -30,8 +29,11 @@ body,
   max-width: 1200px;
   width: 100%;
   padding: 1rem;
-  background-color: #ffffff;
+  
+  /* --- YEH CHANGES HAIN --- */
+  background-color: transparent; /* White background hata diya */
   margin-top: 80px;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: none; /* Shadow hata di */
+  /* ----------------------- */
 }

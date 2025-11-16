@@ -24,7 +24,7 @@ router.route('/add').post((req, res) => {
   });
 
   newProduct.save() // Naye product ko database mein save karo
-    .then(() => res.json('Product safaltapurvak add ho gaya!'))
+    .then(() => res.json('Product added successfully!'))
     .catch(err => res.status(400).json('Error: ' + err));
 });
 

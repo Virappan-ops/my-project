@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  
+  # MongoDB Database Service
+  mongo:
+    image: mongo:latest
+    container_name: pwa-mongo-db
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-data:/data/db
+    
+  # Backend API Service
+  api:
+    # This tells Docker to build from the Dockerfile in the 'backend' folder
+    build: ./backend
+    container_name: pwa-backend-api
+    ports:
+      - '5000:5000'
+    # This links to the .env file inside your backend folder
+    env_file: ./backend/.env
+    depends_on:
+      - mongo # Makes sure Mongo starts first
+
+volumes:
+  mongo-data:
+    driver: local

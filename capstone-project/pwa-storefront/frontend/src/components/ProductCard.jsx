@@ -3,63 +3,56 @@ import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { addOrUpdateCartItem } from '../utils/db';
 import { useOnlineStatus } from '../useOnlineStatus';
-import { Box, Typography } from '@mui/material'; // Styling ke liye MUI components ka istemal karenge
+import { Box, Typography } from '@mui/material';
 
-// --- NAYI STYLING ---
+// --- STYLING (Sab naya hai) ---
 
-// 1. Glassy Card Style
 const cardStyle = {
-  display: 'flex', // Flexbox layout
-  flexDirection: 'column', // Items ko vertically stack karega
-  width: '280px', // Card ki width fix kar di
-  margin: '16px',
-  borderRadius: '16px',
-  
-  // Glassmorphism effect
-  background: 'rgba(255, 255, 255, 0.25)', // Halka white background
-  backdropFilter: 'blur(10px)', // Piche ke content ko blur karega
-  border: '1px solid rgba(255, 255, 255, 0.18)',
-  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.1)', // Halka shadow
-  
-  overflow: 'hidden', // Image ko corner radius dega
-  textAlign: 'left',
-};
-
-// 2. Image Style
-const imgStyle = {
-  width: '100%',
-  height: '200px', // Sabhi images ki height fix kar di
-  objectFit: 'cover', // Image stretch nahi hogi, crop ho jayegi
-};
-
-// 3. Content Area Style (Text ke liye)
-const contentStyle = {
-  padding: '16px',
   display: 'flex',
   flexDirection: 'column',
-  flexGrow: 1, // Ye content ko poori bachi hui jagah dega
+  width: '300px', // Thoda chauda
+  margin: '16px',
+  borderRadius: '12px', // Thoda kam round
+  
+  // Solid, theme-aware background
+  bgcolor: 'background.paper', 
+  
+  // Subtle, theme-aware shadow
+  boxShadow: (theme) => theme.shadows[3],
+  
+  overflow: 'hidden', // Image zoom ko contain karne ke liye
+  textAlign: 'left',
+  
+  // Premium Hover Effects
+  transition: 'all 0.3s ease-in-out',
+  '&:hover': {
+    transform: 'translateY(-4px) scale(1.02)', // Halki lift
+    boxShadow: (theme) => theme.shadows[6], // Shadow badhegi
+    // Image ko zoom karein (neeche dekhein)
+    '& .product-image': {
+      transform: 'scale(1.1)',
+    }
+  },
 };
 
-// 4. Animated Button Style
-const buttonStyle = {
-  backgroundColor: '#007bff',
-  color: 'white',
-  border: 'none',
-  padding: '12px 16px',
-  borderRadius: '8px',
-  cursor: 'pointer',
-  marginTop: 'auto', // --- YE HAI ALIGNMENT KA FIX ---
-                     // Ye button ko hamesha card ke bottom mein push kar dega
+const imageContainerStyle = {
   width: '100%',
-  fontSize: '1rem',
-  fontWeight: 'bold',
-  transition: 'all 0.3s ease', // Animation
-  
-  // Hover effect (jab mouse upar laayein)
-  ':hover': {
-    backgroundColor: '#0056b3',
-    transform: 'scale(1.02)', // Halka sa bada hoga
-  },
+  height: '220px',
+  overflow: 'hidden', // Image ko crop karega
+};
+
+const imgStyle = {
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+  transition: 'transform 0.4s ease-in-out', // Zoom animation
+};
+
+const contentStyle = {
+  padding: '24px', // Zyaada spacing
+  display: 'flex',
+  flexDirection: 'column',
+  flexGrow: 1,
 };
 
 // --- COMPONENT ---
@@ -69,6 +62,7 @@ function ProductCard({ product }) {
   const isOnline = useOnlineStatus();
 
   const handleAddToCart = async () => {
+    // ... (logic mein koi change nahi)
     const itemToAdd = {
       productId: product._id,
       name: product.name,
@@ -99,43 +93,90 @@ function ProductCard({ product }) {
   };
 
   return (
-    // Hum styling ke liye normal 'div' ki jagah MUI ka 'Box' component use kar rahe hain
     <Box sx={cardStyle}>
-      <img src={product.imageUrl} alt={product.name} style={imgStyle} />
+      {/* Image Container (Zoom ke liye) */}
+      <Box sx={imageContainerStyle}>
+        <img 
+          src={product.imageUrl} 
+          alt={product.name} 
+          style={imgStyle}
+          className="product-image" // Hover target ke liye
+        />
+      </Box>
       
       <Box sx={contentStyle}>
-        <Typography variant="h5" component="h3" sx={{ fontWeight: 'bold' }}>
+        <Typography 
+          variant="h6" // Title thoda chhota
+          component="h3" 
+          sx={{ 
+            fontWeight: 600, 
+            color: 'text.primary',
+            letterSpacing: '0.5px' // "Luxury" touch
+          }}
+        >
           {product.name}
         </Typography>
         
         <Typography 
           variant="body2" 
           sx={{ 
-            color: '#333', 
-            minHeight: '40px', // --- ALIGNMENT FIX ---
-                               // Description ke liye min height, taaki 1 line wale bhi jagah lein
+            color: 'text.secondary',
+            minHeight: '40px',
             margin: '8px 0' 
           }}
         >
           {product.description}
         </Typography>
         
-        <Typography variant="h6" component="h4" sx={{ fontWeight: 'bold', margin: '8px 0' }}>
-          ${product.price}
+        <Typography 
+          variant="h5" // Price ko prominent banaya
+          component="h4" 
+          sx={{ 
+            fontWeight: 700, 
+            my: 1.5, // Vertical spacing
+            color: 'text.primary'
+          }}
+        >
+          ${product.price.toFixed(2)}
         </Typography>
         
-        <Typography variant="body2" sx={{ color: '#555', marginBottom: '16px' }}>
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: 'text.secondary',
+            marginBottom: '24px' // Button se pehle zyaada space
+          }}
+        >
           In Stock: {product.stock}
         </Typography>
         
-        {/* Button ko humne 'Box' se wrap kiya taaki ':hover' kaam kare */}
+        {/* --- NAYA PREMIUM BUTTON --- */}
         <Box
           component="button"
-          sx={buttonStyle}
           onClick={handleAddToCart}
-          // Hover effect ko support karne ke liye
-          onMouseOver={e => e.currentTarget.style.backgroundColor = buttonStyle[':hover'].backgroundColor}
-          onMouseOut={e => e.currentTarget.style.backgroundColor = buttonStyle.backgroundColor}
+          sx={{
+            // High-contrast, theme-aware colors
+            bgcolor: (theme) => (theme.palette.mode === 'light' ? '#111' : '#fff'),
+            color: (theme) => (theme.palette.mode === 'light' ? '#fff' : '#000'),
+            
+            border: 'none',
+            padding: '14px 16px', // Thoda tall button
+            borderRadius: '8px',
+            cursor: 'pointer',
+            marginTop: 'auto', 
+            width: '100%',
+            fontSize: '0.9rem',
+            fontWeight: 'bold',
+            letterSpacing: '1px', // "Luxury" touch
+            textTransform: 'uppercase', // "Luxury" touch
+            transition: 'all 0.3s ease',
+            
+            '&:hover': {
+              bgcolor: (theme) => (theme.palette.mode === 'light' ? '#333' : '#eee'),
+              transform: 'scale(1.02)',
+              boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
+            },
+          }}
         >
           Add to Cart
         </Box>

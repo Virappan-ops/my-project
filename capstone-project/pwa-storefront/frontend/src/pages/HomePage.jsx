@@ -54,7 +54,6 @@ function HomePage() {
 
   if (loading) {
     return (
-      // "Loading..." text ki jagah spinner
       <Box sx={centerStyle}>
         <CircularProgress /> 
       </Box>
@@ -63,7 +62,6 @@ function HomePage() {
 
   if (error) {
     return (
-      // Error text ki jagah proper Alert box
       <Box sx={centerStyle}>
         <Alert severity="error" sx={{ width: '80%' }}>
           {error}
@@ -73,20 +71,27 @@ function HomePage() {
   }
 
   return (
-    // Container component page ko center mein rakhta hai aur padding deta hai
     <Container maxWidth="lg"> 
-      <Box sx={{ my: 4 }}> {/* my: 4 matlab margin top/bottom */}
+      <Box sx={{ my: 4 }}>
         
         <Typography 
-          variant="h3" // Bada heading
+          variant="h3"
           component="h1" 
-          gutterBottom // Niche thoda margin
-          sx={{ fontWeight: 'bold', color: '#111' }}
+          gutterBottom
+          sx={{ 
+            fontWeight: 'bold', 
+            color: 'text.primary' // <-- YEH HAI FIX (was '#111')
+          }}
         >
           Our Products
         </Typography>
         
-        <Typography variant="h6" component="p" color="text.secondary" sx={{ mb: 3 }}>
+        <Typography 
+          variant="h6" 
+          component="p" 
+          color="text.secondary" // <-- Yeh 'text.secondary' sahi hai
+          sx={{ mb: 3 }}
+        >
           Explore our latest collection of premium products.
         </Typography>
         

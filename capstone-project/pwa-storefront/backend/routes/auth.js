@@ -17,7 +17,7 @@ router.post('/register', async (req, res) => {
     // Check karein ki user pehle se exist karta hai
     const existingUser = await User.findOne({ email: email });
     if (existingUser) {
-      return res.status(400).json('Email pehle se registered hai.');
+      return res.status(400).json('Email already registered.');
     }
 
     // Password ko Hash (encrypt) karein
@@ -33,7 +33,7 @@ router.post('/register', async (req, res) => {
 
     const savedUser = await newUser.save();
     res.json({
-      msg: "Registration safal raha!",
+      msg: "Registration successful!",
       userId: savedUser._id
     });
 
@@ -57,13 +57,13 @@ router.post('/login', async (req, res) => {
     // User ko dhoondein
     const user = await User.findOne({ email: email });
     if (!user) {
-      return res.status(400).json('Email ya password galat hai.');
+      return res.status(400).json('Email or Password is wrong.'); // Generic message for security
     }
 
     // Password check karein
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json('Email ya password galat hai.');
+      return res.status(400).json('Email or Password is wrong.');
     }
 
     // --- Token Banayein ---

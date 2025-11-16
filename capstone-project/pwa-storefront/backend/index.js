@@ -12,8 +12,8 @@ app.use(express.json());
 // --- MongoDB Connection ---
 const uri = process.env.MONGO_URI;
 mongoose.connect(uri)
-  .then(() => console.log("MongoDB database se connection safal raha!"))
-  .catch(err => console.error("MongoDB connection fail hua:", err));
+  .then(() => console.log("MongoDB database connected successfully"))
+  .catch(err => console.error("MongoDB connection failed:", err));
 // --------------------------
 
 // --- API Routes ko Register Karein ---

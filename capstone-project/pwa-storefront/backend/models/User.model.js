@@ -5,7 +5,7 @@ const userSchema = new Schema({
   email: {
     type: String,
     required: true,
-    unique: true, // Har email unique hona chahiye
+    unique: true,
     trim: true,
     lowercase: true
   },
@@ -13,16 +13,15 @@ const userSchema = new Schema({
     type: String,
     required: true
   },
-  // Aap yahan aur bhi fields add kar sakte hain, jaise 'username', 'phone', etc.
   
-  // User-specific cart ke liye
-  // Hum user ke cart ko bhi database mein save karenge
+  // User-specific cart
   cart: [
     {
       productId: { type: String },
       name: { type: String },
       price: { type: Number },
-      quantity: { type: Number }
+      quantity: { type: Number },
+      imageUrl: { type: String, required: false } // <-- YEH LINE ADD KARNI THI
     }
   ]
 }, {
@@ -30,5 +29,4 @@ const userSchema = new Schema({
 });
 
 const User = mongoose.model('User', userSchema);
-
 module.exports = User;

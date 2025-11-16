@@ -1,14 +1,14 @@
 const router = require('express').Router();
 let Order = require('../models/Order.model');
-const authMiddleware = require('../middleware/auth'); // <-- 1. AuthMiddleware import karein
+const authMiddleware = require('../middleware/auth'); // 1. Import AuthMiddleware
 
-// --- 1. GET User's Orders --- (YAHAN NAYA ROUTE)
+// --- 1. GET User's Orders ---
 // Route: GET /api/orders
-// Description: Logged-in user ke saare orders fetch karta hai
+// Description: Fetches all orders for the logged-in user
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const orders = await Order.find({ userId: req.user.id })
-                             .sort({ createdAt: -1 }); // Naye order sabse upar
+                             .sort({ createdAt: -1 }); // Newest orders first
     res.json(orders);
   } catch (err) {
     res.status(500).json('Error: ' + err);
@@ -18,24 +18,24 @@ router.get('/', authMiddleware, async (req, res) => {
 
 // --- 2. Checkout (Create New Order) ---
 // Route: POST /api/orders/checkout
-router.post('/checkout', authMiddleware, async (req, res) => { // <-- 2. Middleware yahan add karein
+router.post('/checkout', authMiddleware, async (req, res) => { // 2. Add middleware here
   try {
     const { items, totalAmount } = req.body;
-    const userId = req.user.id; // <-- 3. User ID ko token se lein
+    const userId = req.user.id; // 3. Get User ID from the token
 
     if (!items || items.length === 0 || !totalAmount) {
-      return res.status(400).json('Cart khaali hai.');
+      return res.status(400).json('Cart is empty.');
     }
 
     const newOrder = new Order({
-      userId, // <-- 4. User ID ko save karein
+      userId, // 4. Save the User ID
       items,
       totalAmount,
-      status: 'Pending', // Hum ise baad mein 'Successful' kar sakte hain
+      status: 'Pending',
     });
 
     const savedOrder = await newOrder.save();
-    res.json({ message: 'Order safaltapurvak place ho gaya!', orderId: savedOrder._id });
+    res.json({ message: 'Order placed successfully!', orderId: savedOrder._id });
 
   } catch (err) {
     res.status(400).json('Error: ' + err);
