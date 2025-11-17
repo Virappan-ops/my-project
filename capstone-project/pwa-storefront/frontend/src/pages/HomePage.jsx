@@ -37,7 +37,7 @@ const HomePage = () => {
         setCategories(['all', ...uniqueCategories]);
       } catch (err) {
         console.error("Error fetching products:", err);
-        setError("⚠️ Products load nahi ho paaye. Baad mein try karein.");
+        setError("⚠️ Unable to load products. Please try again later.");
       } finally {
         setLoading(false);
       }
